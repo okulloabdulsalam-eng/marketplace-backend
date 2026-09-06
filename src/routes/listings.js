@@ -5,23 +5,22 @@ const authenticateToken = require('../middleware/auth');
 const router = express.Router();
 
 // GET all listings
-router.get('/', async (req, res) => {
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
   try {
     const result = await pool.query(`
       SELECT 
-        id, seller_id, category_id, title, description, price, address,
-        is_featured, status, created_at,
-        ST_Y(location::geometry) AS latitude,
-        ST_X(location::geometry) AS longitude
-      FROM listings
-      ORDER BY created_at DESC
-    `);
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+        l.id, l.seller_id, l.category_id, l.title, l.description, l.price, l.address,
+        l.is_featured, l.status, l.created_at,
+        ST_Y(l.location::geometry) AS latitude,
+        ST_X(l.location::geometry) AS longitude,
+        u.name AS seller_name,
+        u.phone AS seller_phone,
+        u.email AS seller_email
+      FROM listings l
+      JOIN users u ON l.seller_id = u.id
+      WHERE l.id = $1
+    `, [id]);
 
 // GET nearby listings
 router.get('/nearby', async (req, res) => {
