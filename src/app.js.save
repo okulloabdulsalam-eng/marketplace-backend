@@ -1,0 +1,17 @@
+app.get('/api/v1/listings', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id, seller_id, category_id, title, description, price, address,
+        is_featured, status, created_at,
+        ST_Y(location::geometry) AS latitude,
+        ST_X(location::geometry) AS longitude
+      FROM listings
+      ORDER BY created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
