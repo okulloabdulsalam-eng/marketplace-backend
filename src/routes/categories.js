@@ -9,9 +9,18 @@ router.get('/', async (req, res) => {
     const all = result.rows;
 
     const mainCategories = all.filter((c) => c.parent_id === null);
+
+    const buildTree = (parentId) =>
+      all
+        .filter((c) => c.parent_id === parentId)
+        .map((c) => ({
+          ...c,
+          subcategories: buildTree(c.id),
+        }));
+
     const withChildren = mainCategories.map((main) => ({
       ...main,
-      subcategories: all.filter((c) => c.parent_id === main.id),
+      subcategories: buildTree(main.id),
     }));
 
     res.json(withChildren);
