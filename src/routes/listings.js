@@ -8,19 +8,12 @@ const router = express.Router();
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query(`
-      SELECT 
-        l.id, l.seller_id, l.category_id, l.title, l.description, l.price, l.address,
-        l.is_featured, l.status, l.created_at,
-        ST_Y(l.location::geometry) AS latitude,
-        ST_X(l.location::geometry) AS longitude,
-        u.name AS seller_name,
-        u.phone AS seller_phone,
-        u.email AS seller_email
-      FROM listings l
-      JOIN users u ON l.seller_id = u.id
-      WHERE l.id = $1
-    `, [id]);
+    const result = await pool.query(
+  `INSERT INTO listings (seller_id, category_id, title, description, price, location, address, condition, attributes)
+   VALUES ($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326), $8, $9, $10)
+   RETURNING id, title, description, price, address, condition, attributes, created_at`,
+  [seller_id, category_id || null, title, description || null, price, longitude, latitude, address || null, condition || null, JSON.stringify(attributes || {})]
+);
 
 // GET nearby listings
 router.get('/nearby', async (req, res) => {
@@ -78,7 +71,7 @@ router.post('/', authenticateToken, async (req, res) => {
     return res.status(403).json({ error: 'Only sellers can create listings' });
   }
 
-  const { category_id, title, description, price, latitude, longitude, address } = req.body;
+  const { category_id, title, description, price, latitude, longitude, address, condition, attributes } = req.body;
   const seller_id = req.user.id;
 
   if (!title || !price || !latitude || !longitude) {
